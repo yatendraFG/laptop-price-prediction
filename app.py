@@ -2,90 +2,192 @@ import streamlit as st
 import pickle
 import pandas as pd
 
-# Load the trained model
+# -----------------------------------
+# Load Trained Model
+# -----------------------------------
 with open('LR_model.pkl', 'rb') as f:
     model = pickle.load(f)
 
-# Load the dictionary of label encoders
-with open('label_encoders.pkl', 'rb') as f:
-    label_encoders = pickle.load(f) # Load the dictionary
+# -----------------------------------
+# Manual Mapping (Actual Brand Names)
+# -----------------------------------
 
-st.title('Laptop Price Prediction App')
-st.write('Enter the details of the laptop to predict its price.')
+brand_mapping = {
+    "HP": 0,
+    "Lenovo": 1,
+    "Asus": 2,
+    "Dell": 3,
+    "Acer": 4,
+    "MSI": 5,
+    "Samsung": 6,
+    "Apple": 7,
+    "Infinix": 8,
+    "LG": 9
+}
 
-# Input fields for features (adjust based on your 'X' DataFrame columns)
-# Use specific encoders for each column
+processor_mapping = {
+    "Core i3": 0,
+    "Core i5": 1,
+    "Core i7": 2,
+    "Ryzen 3": 3,
+    "Ryzen 5": 4,
+    "Ryzen 7": 5
+}
 
-# Create a dummy DataFrame to get unique values for inverse_transform, 
-# as the original `df` might not be available when running the Streamlit app directly.
-# This assumes the label_encoders were fitted on the complete original df.
-# For a robust solution, you'd typically save the inverse_transform mappings or use a fixed list of options.
-# For now, we'll recreate a temporary df to get the original categories.
+cpu_mapping = {
+    "Intel": 0,
+    "AMD": 1
+}
 
-# NOTE: In a real deployment, you would not rely on 'df' being in scope. 
-# Instead, you would load the unique categories that were used during fitting
-# and pass them to the selectbox. For this example, we'll assume 'df' is available for options.
-# In a real Streamlit app, you might hardcode the options or load them from a saved file.
+ram_type_mapping = {
+    "DDR4": 0,
+    "DDR5": 1
+}
 
-# Example of how to get the options for brand, if df is not globally available:
-# brand_options = label_encoders['brand'].inverse_transform(range(len(label_encoders['brand'].classes_)))
+rom_type_mapping = {
+    "SSD": 0,
+    "HDD": 1
+}
 
-# Using existing `df` from the notebook's kernel state for simplicity in Colab context.
-# In a standalone app.py, you would need to load `df` or save/load the unique categories separately.
+gpu_mapping = {
+    "Integrated": 0,
+    "NVIDIA": 1,
+    "AMD Radeon": 2
+}
 
-brand_le = label_encoders['brand']
-brand = st.selectbox('Brand', brand_le.inverse_transform(range(len(brand_le.classes_))))
+os_mapping = {
+    "Windows": 0,
+    "Mac": 1,
+    "DOS": 2,
+    "Linux": 3
+}
 
-spec_rating = st.slider('Specification Rating', 60.0, 90.0, 75.0)
+# -----------------------------------
+# Streamlit UI
+# -----------------------------------
 
-processor_le = label_encoders['processor']
-processor = st.selectbox('Processor', processor_le.inverse_transform(range(len(processor_le.classes_))))
+st.set_page_config(page_title="Laptop Price Prediction")
 
-cpu_le = label_encoders['CPU']
-CPU = st.selectbox('CPU', cpu_le.inverse_transform(range(len(cpu_le.classes_))))
+st.title("💻 Laptop Price Prediction App")
 
-Ram = st.selectbox('RAM (GB)', [2, 4, 8, 12, 16, 32, 64])
+st.write("Enter laptop specifications")
 
-ram_type_le = label_encoders['Ram_type']
-Ram_type = st.selectbox('RAM Type', ram_type_le.inverse_transform(range(len(ram_type_le.classes_))))
+# -----------------------------------
+# User Inputs
+# -----------------------------------
 
-ROM = st.selectbox('ROM (GB)', [256, 512, 1000, 2000])
+brand = st.selectbox(
+    "Brand",
+    list(brand_mapping.keys())
+)
 
-rom_type_le = label_encoders['ROM_type']
-ROM_type = st.selectbox('ROM Type', rom_type_le.inverse_transform(range(len(rom_type_le.classes_))))
+spec_rating = st.slider(
+    "Specification Rating",
+    60.0,
+    90.0,
+    75.0
+)
 
-gpu_le = label_encoders['GPU']
-GPU = st.selectbox('GPU', gpu_le.inverse_transform(range(len(gpu_le.classes_))))
+processor = st.selectbox(
+    "Processor",
+    list(processor_mapping.keys())
+)
 
-display_size = st.slider('Display Size (inches)', 11.0, 18.0, 15.6)
-resolution_width = st.slider('Resolution Width', 1080, 3840, 1920)
-resolution_height = st.slider('Resolution Height', 768, 3456, 1080)
+CPU = st.selectbox(
+    "CPU",
+    list(cpu_mapping.keys())
+)
 
-os_le = label_encoders['OS']
-OS = st.selectbox('Operating System', os_le.inverse_transform(range(len(os_le.classes_))))
+Ram = st.selectbox(
+    "RAM (GB)",
+    [2, 4, 8, 16, 32, 64]
+)
 
-warranty = st.selectbox('Warranty (Years)', [0, 1, 2, 3])
+Ram_type = st.selectbox(
+    "RAM Type",
+    list(ram_type_mapping.keys())
+)
 
-if st.button('Predict Price'):
-    # Encode categorical inputs using the loaded LabelEncoder
-    encoded_brand = brand_le.transform([brand])[0]
-    encoded_processor = processor_le.transform([processor])[0]
-    encoded_CPU = cpu_le.transform([CPU])[0]
-    encoded_Ram_type = ram_type_le.transform([Ram_type])[0]
-    encoded_ROM_type = rom_type_le.transform([ROM_type])[0]
-    encoded_GPU = gpu_le.transform([GPU])[0]
-    encoded_OS = os_le.transform([OS])[0]
+ROM = st.selectbox(
+    "ROM (GB)",
+    [256, 512, 1000, 2000]
+)
 
-    # Create a DataFrame for prediction
+ROM_type = st.selectbox(
+    "ROM Type",
+    list(rom_type_mapping.keys())
+)
+
+GPU = st.selectbox(
+    "GPU",
+    list(gpu_mapping.keys())
+)
+
+display_size = st.slider(
+    "Display Size",
+    11.0,
+    18.0,
+    15.6
+)
+
+resolution_width = st.selectbox(
+    "Resolution Width",
+    [1366, 1920, 2560, 3840]
+)
+
+resolution_height = st.selectbox(
+    "Resolution Height",
+    [768, 1080, 1440, 2160]
+)
+
+OS = st.selectbox(
+    "Operating System",
+    list(os_mapping.keys())
+)
+
+warranty = st.selectbox(
+    "Warranty",
+    [0, 1, 2, 3]
+)
+
+# -----------------------------------
+# Prediction
+# -----------------------------------
+
+if st.button("Predict Price 💰"):
+
     input_data = pd.DataFrame([[
-        encoded_brand, spec_rating, encoded_processor, encoded_CPU, Ram, 
-        encoded_Ram_type, ROM, encoded_ROM_type, encoded_GPU, display_size, 
-        resolution_width, resolution_height, encoded_OS, warranty
-    ]],
-    columns=['brand', 'spec_rating', 'processor', 'CPU', 'Ram', 'Ram_type', 'ROM', 
-             'ROM_type', 'GPU', 'display_size', 'resolution_width', 
-             'resolution_height', 'OS', 'warranty'])
+        brand_mapping[brand],
+        spec_rating,
+        processor_mapping[processor],
+        cpu_mapping[CPU],
+        Ram,
+        ram_type_mapping[Ram_type],
+        ROM,
+        rom_type_mapping[ROM_type],
+        gpu_mapping[GPU],
+        display_size,
+        resolution_width,
+        resolution_height,
+        os_mapping[OS],
+        warranty
+    ]], columns=[
+        'brand',
+        'spec_rating',
+        'processor',
+        'CPU',
+        'Ram',
+        'Ram_type',
+        'ROM',
+        'ROM_type',
+        'GPU',
+        'display_size',
+        'resolution_width',
+        'resolution_height',
+        'OS',
+        'warranty'
+    ])
 
-    # Make prediction
     prediction = model.predict(input_data)[0]
-    st.success(f'Predicted Laptop Price: ₹{prediction:,.2f}')
+
+    st.success(f"💰 Predicted Laptop Price: ₹ {prediction:,.2f}")
